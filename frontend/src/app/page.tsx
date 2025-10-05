@@ -13,6 +13,20 @@ export default function LearnMapPage() {
     setGraph(res.data);
   };
 
+  const nodesWithPosition = graph.nodes.map((node: any, index: number) => ({
+    id: node.id,
+    data: { label: node.id },
+    position: node.position || { x: Math.random() * 500, y: Math.random() * 500 },
+  }));
+
+  const edges = graph.edges.map((edge: any, index: number) => ({
+    id: `${edge.source}-${edge.target}-${index}`,
+    source: edge.source,
+    target: edge.target,
+    label: edge.relation,
+  }));
+
+
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-4">LearnMap 🧠</h1>
@@ -32,12 +46,13 @@ export default function LearnMapPage() {
       </button>
 
       <div className="h-[600px] mt-6 border rounded">
-        <ReactFlow nodes={graph.nodes} edges={graph.edges}>
+        <ReactFlow nodes={nodesWithPosition} edges={edges}>
           <MiniMap />
           <Controls />
           <Background />
         </ReactFlow>
       </div>
+
     </div>
   );
 }
