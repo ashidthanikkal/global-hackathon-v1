@@ -6,43 +6,68 @@ import ReactFlow, {
   Background,
   useNodesState,
   useEdgesState,
+  Node,
+  Edge,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import axios from "axios";
 
+// Define types for the graph data
+interface GraphNode {
+  id: string;
+  position?: { x: number; y: number };
+}
+
+interface GraphEdge {
+  source: string;
+  target: string;
+  relation?: string;
+}
+
+interface Graph {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}
+
 export default function LearnMapPage() {
   const [text, setText] = useState("");
-  const [graph, setGraph] = useState({ nodes: [], edges: [] });
+  const [graph, setGraph] = useState<Graph>({ nodes: [], edges: [] });
 
-  // Use React Flow hooks to manage nodes and edges
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  // React Flow hooks for managing nodes and edges
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node[]>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge[]>([]);
 
   // Update nodes and edges whenever the graph updates
   useEffect(() => {
-    const nodesWithPosition = graph.nodes.map((node: any) => ({
+    const nodesWithPosition: Node[] = graph.nodes.map((node) => ({
       id: node.id,
       data: { label: node.id },
       position: node.position || { x: Math.random() * 500, y: Math.random() * 500 },
     }));
 
-    const edgesMapped = graph.edges.map((edge: any, index: number) => ({
+    const edgesMapped: Edge[] = graph.edges.map((edge, index) => ({
       id: `${edge.source}-${edge.target}-${index}`,
       source: edge.source,
       target: edge.target,
       label: edge.relation,
-      type: 'smoothstep',
+      type: "smoothstep",
       animated: true,
-
     }));
 
     setNodes(nodesWithPosition);
     setEdges(edgesMapped);
-  }, [graph]);
+  }, [graph, setNodes, setEdges]); // Added setNodes and setEdges to dependencies
 
   const generateGraph = async () => {
-    const res = await axios.post("http://localhost:8000/graph/generate", { text });
-    setGraph(res.data);
+    try {
+      const res = await axios.post<Graph>(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/graph/generate`,
+        { text }
+      );
+      setGraph(res.data);
+    } catch (err) {
+      console.error("Error generating graph:", err);
+    }
   };
 
   return (
@@ -52,9 +77,12 @@ export default function LearnMapPage() {
         Transform course notes into an interactive concept graph for easier understanding and learning.
       </h5>
 
-      <div className="mb-4 p-4 bg-yellow-100 border-l-4 border-yellow-500 ">
-        <p className="text-black">Test: Photosynthesis is the vital process where green plants, algae, and cyanobacteria convert light energy into chemical energy to produce food (sugars) and oxygen from carbon dioxide and water.</p>
+      <div className="mb-4 p-4 bg-yellow-100 border-l-4 border-yellow-500">
+        <p className="text-black">
+          Test: Photosynthesis is the vital process where green plants, algae, and cyanobacteria convert light energy into chemical energy to produce food (sugars) and oxygen from carbon dioxide and water.
+        </p>
       </div>
+
       <textarea
         className="w-full h-40 p-3 border rounded mb-4"
         placeholder="Paste your course notes here..."
@@ -73,7 +101,7 @@ export default function LearnMapPage() {
         <ReactFlow
           nodes={nodes}
           edges={edges}
-          onNodesChange={onNodesChange} // needed for dragging
+          onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           fitView
         >
